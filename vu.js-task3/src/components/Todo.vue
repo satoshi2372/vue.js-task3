@@ -7,7 +7,7 @@
         id="all"
         name="sort-radio"
         value="all"
-        @click="showAll"
+        @click="sortStatus('block','block')"
         checked
       />すべて
     </label>
@@ -17,7 +17,7 @@
         id="working"
         name="sort-radio"
         value="working"
-        @click="sortWork"
+        @click="sortStatus('none','block')"
       />作業中
     </label>
     <label for="done">
@@ -26,7 +26,7 @@
         id="done"
         name="sort-radio"
         value="done"
-        @click="sortDone"
+        @click="sortStatus('block','none')"
       />完了
     </label>
     <p style="font-weight: bold">
@@ -42,110 +42,67 @@
         <span class="task-text" :style="{ width: taskWidth }">{{
           task.taskName
         }}</span>
-        <button class="workbtn working work" @click="changeStatus">
+        <button class="work-btn work" @click="changeStatus">
           作業中
         </button>
-        <button class="deletebtn" @click="deleteTask">削除</button>
+        <button class="deletebtn" @click="deleteTask($event);checkLength()">削除</button>
       </li>
     </ul>
     <h2>新規タスクの追加</h2>
     <input
       id="task-textbox"
       type="text"
-      :value="taskText"
-      @input="updateTaskName"
+      v-model="taskName"
     />
-    <button id="add-btn" @click="addTask">追加</button>
+    <button id="add-btn" @click="addTask();checkLength()">追加</button>
   </div>
 </template>
 
 <script>
-//DOMから要素取得
-const workTask = document.getElementsByClassName("working");
-const doneTask = document.getElementsByClassName("done");
-
-// 作業中ボタンの親要素を表示/非表示 完了ボタンの親要素を表示/非表示
-function sortWork(text) {
-  for (let i = 0; i < workTask.length; i++) {
-    workTask[i].parentNode.style.display = text;
-  }
-}
-function sortDone(text) {
-  for (let i = 0; i < doneTask.length; i++) {
-    doneTask[i].parentNode.style.display = text;
-  }
-}
 //vueインスタンス
 export default {
   data() {
     return {
-      status: "",
-      taskText: "",
+      status: '',
+      taskName: '',
       tasks: [],
-      maxLength: "",
-      statusPadding: "37px",
-      taskWidth: "100px",
+      maxLength: '',
+      statusPadding: '37px',
+      taskWidth: '100px',
     };
   },
   methods: {
-    //radioすべてクリック時に全て表示
-    showAll() {
-      sortWork("block");
-      sortDone("block");
-    },
-    //radio作業中クリック時に全て表示
-    sortWork() {
-      sortWork("block");
-      sortDone("none");
-    },
-    //radio完了クリック時に全て表示
-    sortDone() {
-      sortWork("none");
-      sortDone("block");
-    },
-    //テキストボックス入力でtaskName変更
-    updateTaskName(e) {
-      this.taskName = e.target.value;
-    },
     //追加ボタンでtaskを追加
     addTask() {
       const taskObj = { id: this.tasks.length, taskName: this.taskName };
       this.tasks.push(taskObj);
-      //tasksのtaskName.lengthの最大値を取得
-      this.maxLength = Math.max.apply(
-        null,
-        this.tasks.map(function (o) {
-          return o.taskName.length;
-        })
-      );
-      //maxLengthが５文字以上ならliのtask-itemの幅を文字数に応じて増やす
-      if (this.maxLength * 50 > 200) {
-        this.taskWidth = (this.maxLength - 4) * 20 + 100 + "px";
-        //状態textも同じように幅を増やす
-        this.statusPadding = (this.maxLength - 4) * 20 + 37 + "px";
-      }
-      this.taskName = ""; //テキストボックスを空白にす
+      this.taskName = ''; //テキストボックスを空白にす
     },
     //作業中ボタンクリックで状態を変更
     changeStatus(e) {
-      if (e.target.textContent !== "完了") {
-        e.target.textContent = "完了";
-        e.target.classList.add("done");
+      if (e.target.textContent !== '完了') {
+        e.target.textContent = '完了';
+        e.target.classList.add('done');
+        e.target.classList.remove('work');
       } else {
-        e.target.textContent = "作業中";
-        e.target.classList.add("work");
+        e.target.textContent = '作業中';
+        e.target.classList.add('work');
+        e.target.classList.remove('done');
       }
     },
     //削除ボタンクリックでタスクオブジェクト削除
     deleteTask(e) {
       const deleteEl = e.target.parentNode; //クリックしたボタンの親要素取得
-      const taskItemLists = Array.from(document.querySelectorAll(".task-item")); //htmlコレクションを配列化
+      const taskItemLists = Array.from(document.querySelectorAll('.task-item')); //htmlコレクションを配列化
       const deleteIndex = taskItemLists.indexOf(deleteEl); //クリックされた親要素（li）が何番目か検出
       this.tasks.splice(deleteIndex, 1); //クリックされたオブジェクト削除
       //idが重複しないよう削除した後にtasksのobjのそれぞれのid値を変更する。
       for (let i = 0; i < this.tasks.length; i++) {
         this.tasks[i].id = i;
       }
+    },
+    //taskNameの文字数に応じて幅を可変する
+    checkLength(){
       //tasksのtaskName.lengthの最大値を取得
       this.maxLength = Math.max.apply(
         null,
@@ -155,21 +112,31 @@ export default {
       );
       //maxLengthが５文字以上ならliのtask-itemの幅を文字数に応じて増やす
       if (this.maxLength * 50 > 200) {
-        this.taskWidth = (this.maxLength - 4) * 20 + 100 + "px";
+        this.taskWidth = (this.maxLength - 4) * 20 + 100 + 'px';
         //状態textも同じように幅を増やす
-        this.statusPadding = (this.maxLength - 4) * 20 + 37 + "px";
+        this.statusPadding = (this.maxLength - 4) * 20 + 37 + 'px';
       } else {
         //5文字未満なら初期値に戻す
-        this.taskWidth = "100px";
-        this.statusPadding = "37px";
+        this.taskWidth = '100px';
+        this.statusPadding = '37px';
       }
     },
+    sortStatus(texta,textb) {
+      const doneLists = Array.from(document.getElementsByClassName('done'));
+      const workLists = Array.from(document.getElementsByClassName('work'));
+      for(let i = 0;i< doneLists.length;i++){
+        doneLists[i].parentNode.style.display = texta
+      }
+      for(let i = 0;i< workLists.length;i++){
+        workLists[i].parentNode.style.display = textb
+      }
+    }
   },
 };
 </script>
 
 <style scoped>
-.workbtn {
+.work-btn {
   margin-right: 10px;
   width: 60px;
 }
